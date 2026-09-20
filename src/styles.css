@@ -52,9 +52,10 @@ button:disabled { cursor: default; opacity: .38; }
 .wish-list { margin-top: 20px; border-top: 1px solid #aaa; }
 .wish-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 17px 0; border-bottom: 1px solid #d8d8d8; }
 .wish-content { display: grid; gap: 8px; min-width: 0; padding: 0; border: 0; background: transparent; color: #171717; text-align: left; }
-.wish-content strong { overflow-wrap: anywhere; line-height: 1.55; }
-.wish-content small { color: #666; line-height: 1.5; overflow-wrap: anywhere; }
-.wish-content .add-step { color: #333; text-decoration: underline; text-underline-offset: 3px; }
+.wish-content strong { overflow-wrap: anywhere; font-size: 1rem; line-height: 1.55; }
+.next-step { display: grid; gap: 2px; color: #666; font-size: .84rem; line-height: 1.55; overflow-wrap: anywhere; }
+.next-step small { color: #888; font-size: .68rem; font-weight: 700; letter-spacing: .04em; }
+.wish-content .add-step { color: #333; font-size: .78rem; line-height: 1.5; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 3px; }
 .wish-meta { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 8px; }
 .wish-meta span { color: #666; font-size: .72rem; white-space: nowrap; }
 .wish-meta button, .done-row button { min-width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #444; font-size: .78rem; text-decoration: underline; text-underline-offset: 3px; }

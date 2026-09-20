@@ -165,7 +165,9 @@ const App = () => {
           : <article className="wish-row" key={wish.id}>
               <button className="wish-content" type="button" onClick={() => setEditingId(wish.id)}>
                 <strong>{wish.title}</strong>
-                <small className={wish.nextStep ? "" : "add-step"}>{wish.nextStep ? `次の一歩　${wish.nextStep}` : "＋ 次の一歩を追加"}</small>
+                {wish.nextStep
+                  ? <span className="next-step"><small>次の一歩</small><span>{wish.nextStep}</span></span>
+                  : <small className="add-step">＋ 次の一歩を追加</small>}
               </button>
               <div className="wish-meta"><span>{classifyDueDate(wish.actionDueOn)}</span><button type="button" onClick={() => setEditingId(wish.id)}>編集</button></div>
             </article>)}</div>}
