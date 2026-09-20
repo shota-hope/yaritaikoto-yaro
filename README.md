@@ -6,6 +6,8 @@
 
 [docs/product.md](docs/product.md) を仕様・決定事項の正本とします。変更が決まったら本文と決定履歴を更新します。
 
+開発時のIssue・ブランチ・PRの運用は [docs/development.md](docs/development.md) にまとめています。
+
 ## 開発の最初の範囲
 
 1. Vite + React + TypeScript + Tailwindで開発環境を用意する。
