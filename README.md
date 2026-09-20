@@ -48,7 +48,7 @@ npm run deploy:dry-run
 npm run deploy
 ```
 
-公開URL: 初回デプロイ後に、Wranglerが表示した `https://yaritaikoto-yaro.<サブドメイン>.workers.dev` をここへ記入します。
+実際の公開URLは、このリポジトリには記載しません。確認が必要な場合は、`npm run deploy` の出力またはCloudflare Dashboardで確認します。
 
 現在、入力した年齢ややりたいことはサーバーへ送信せず、利用中のブラウザ内にだけ保存されます。別のブラウザや端末には引き継がれず、ブラウザの保存データを消すと失われます。
 
