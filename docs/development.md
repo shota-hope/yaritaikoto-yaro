@@ -64,12 +64,14 @@
 
 - `main`向けのPRでは、GitHub Actionsが`npm ci`、`npm test`、`npm run build`を実行する。PRを更新すると古い実行は取り消し、新しいコミットを検証する。
 - `main`へのpushでも同じ検証を行い、成功した最新コミットだけを既存のCloudflare Worker `yaritaikoto-yaro`へ公開する。複数の公開は直列に実行する。
-- PRの検証にはCloudflareの認証情報を渡さない。公開時だけRepository Secretsの`CLOUDFLARE_API_TOKEN`と`CLOUDFLARE_ACCOUNT_ID`を使用する。
+- PRの検証にはCloudflareの認証情報を渡さない。公開時だけ`production` Environment Secretsの`CLOUDFLARE_API_TOKEN`と`CLOUDFLARE_ACCOUNT_ID`を使用する。
 - `CLOUDFLARE_API_TOKEN`には、対象アカウントへWorkersを公開できる最小限の権限を設定する。値をリポジトリやログへ記載しない。
+- `production` Environmentは`main`だけに限定し、`main`はPRと`verify`の成功を必須にする。force pushとブランチ削除は許可しない。
+- workflowで利用するGitHub Actionsは、確認済みの完全なコミットSHAへ固定する。更新時は公式リポジトリのタグが指すコミットを確認する。
 - GitHubのActions画面で検証・公開結果を確認する。失敗した場合は原因を修正してPRを更新し、`main`の失敗は修正PRをマージして再実行する。
 - PRのマージ承認には、その変更が検証成功後に自動公開されることへの承認も含む。自動公開を止める必要がある場合は、マージ前にこのworkflowを変更する。
 
-初回設定では、GitHubリポジトリのSettings > Secrets and variables > Actionsに次のRepository Secretsを登録する。
+初回設定では、GitHubリポジトリのSettings > Environments > productionに次のEnvironment Secretsを登録する。
 
 | Secret | 設定する値 |
 | --- | --- |
