@@ -80,6 +80,14 @@
 
 Secretsが未設定または無効な場合、検証までは成功しても公開は失敗する。実際の公開URLはActionsの実行結果またはCloudflare Dashboardで確認する。
 
+## 依存関係の更新
+
+- DependabotはnpmとGitHub Actionsの更新を毎週確認する。通常のバージョン更新は、公開から7日以上経過したものだけを対象にする。リポジトリ設定ではDependabot alertsとsecurity updatesを有効にし、既知の脆弱性に対するセキュリティ更新には、この待機期間を適用しない。
+- npmの直接依存は`package.json`のバージョン範囲と`package-lock.json`で管理する。更新PRでは両方の差分を確認し、意図しない依存やインストールスクリプトの追加がないか確認する。
+- 更新PRは自動マージしない。リリースノート、破壊的変更、公開元を確認し、GitHub Actionsの場合は完全なコミットSHAが公式リポジトリのリリースを指していることを確認する。
+- `npm audit`で既知の脆弱性を確認し、CIの`npm ci`、`npm test`、`npm run build`がすべて成功してから取り込む。
+- DependabotのPRにも通常のレビュー手順とブランチ保護を適用する。PRの検証には公開用Secretsを渡さず、マージ後の`main`だけを公開対象にする。
+
 ## 完了の目安
 
 - Issueの目的を満たしている。
