@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addCalendarYears, classifyDueDate, dueDateFor, parseAge, remainingHealthyDays, remainingHealthyTime, setWishCompletion, tokyoDate, Wish } from "./core";
+import { addCalendarYears, advanceWishStep, classifyDueDate, dueDateFor, parseAge, remainingHealthyDays, remainingHealthyTime, setWishCompletion, tokyoDate, Wish } from "./core";
 
 describe("parseAge", () => {
   it.each([["0", 0], ["120", 120], [" 42 ", 42]])("accepts %s", (value, expected) => expect(parseAge(value as string)).toBe(expected));
@@ -63,5 +63,34 @@ describe("setWishCompletion", () => {
   it("restores a wish without changing its identity", () => {
     const completed = setWishCompletion(wish, true, new Date("2026-09-21T03:00:00Z"));
     expect(setWishCompletion(completed, false)).toMatchObject({ id: "wish-1", status: "active", doneOn: null });
+  });
+});
+
+describe("advanceWishStep", () => {
+  const wish: Wish = {
+    id: "wish-1",
+    title: "北海道で流氷を見る",
+    nextStep: "ツアーを調べる",
+    actionDueOn: "2026-12-31",
+    status: "active",
+    doneOn: null,
+    createdAt: "2026-09-20T00:00:00.000Z",
+    updatedAt: "2026-09-20T00:00:00.000Z",
+  };
+
+  it("replaces the completed step and resets its timing", () => {
+    expect(advanceWishStep(wish, "  候補日を決める  ")).toMatchObject({
+      id: "wish-1",
+      title: "北海道で流氷を見る",
+      nextStep: "候補日を決める",
+      actionDueOn: null,
+      status: "active",
+      doneOn: null,
+    });
+  });
+
+  it("does not mutate the current step", () => {
+    advanceWishStep(wish, "候補日を決める");
+    expect(wish).toMatchObject({ nextStep: "ツアーを調べる", actionDueOn: "2026-12-31" });
   });
 });
