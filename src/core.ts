@@ -93,3 +93,10 @@ export const remainingHealthyTime = (profile: Profile, now = new Date()): Remain
 };
 
 export const remainingHealthyDays = (profile: Profile, now = new Date()) => remainingHealthyTime(profile, now).totalDays;
+
+export const setWishCompletion = (wish: Wish, completed: boolean, date = new Date()): Wish => ({
+  ...wish,
+  status: completed ? "done" : "active",
+  doneOn: completed ? tokyoDate(date) : null,
+  actionDueOn: completed ? null : wish.actionDueOn,
+});

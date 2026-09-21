@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AppData, Profile, Timeframe, Wish, classifyDueDate, dueDateFor, parseAge, remainingHealthyTime, timeframeFromDueDate, tokyoDate } from "./core";
+import { AppData, Profile, Timeframe, Wish, classifyDueDate, dueDateFor, parseAge, remainingHealthyTime, setWishCompletion, timeframeFromDueDate, tokyoDate } from "./core";
 
 const STORAGE_KEY = "yaritaikoto-yaro:v1";
 
@@ -43,8 +43,7 @@ const App = () => {
     return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", refreshDate); };
   }, []);
 
-  const active = useMemo(() => data?.wishes.filter((wish) => wish.status === "active") ?? [], [data]);
-  const done = useMemo(() => [...(data?.wishes.filter((wish) => wish.status === "done") ?? [])].sort((a, b) => (b.doneOn ?? "").localeCompare(a.doneOn ?? "")), [data]);
+  const wishes = data?.wishes ?? [];
   const validAge = parseAge(age);
   const previewProfile: Profile | null = validAge === null ? null : data?.profile.age === validAge ? data.profile : { age: validAge, savedAt: new Date().toISOString() };
   const remaining = previewProfile ? remainingHealthyTime(previewProfile, new Date(`${today}T12:00:00+09:00`)) : null;
@@ -116,8 +115,12 @@ const App = () => {
   };
 
   const updateWish = (updated: Wish) => setData((current) => current ? { ...current, wishes: current.wishes.map((wish) => wish.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : wish) } : current);
-  const completeWish = (wish: Wish) => { updateWish({ ...wish, status: "done", doneOn: tokyoDate(), actionDueOn: null }); setEditingId(null); setNotice("達成に残しました。おめでとう。"); };
-  const restoreWish = (wish: Wish) => updateWish({ ...wish, status: "active", doneOn: null });
+  const toggleWishCompletion = (wish: Wish) => {
+    const completed = wish.status !== "done";
+    updateWish(setWishCompletion(wish, completed));
+    setEditingId(null);
+    setNotice(completed ? "達成しました。おめでとう。" : "達成を取り消しました");
+  };
   const deleteWish = (wish: Wish) => {
     if (!window.confirm(`「${wish.title}」を削除しますか？`)) return;
     setData((current) => current ? { ...current, wishes: current.wishes.filter((item) => item.id !== wish.id) } : current);
@@ -151,7 +154,7 @@ const App = () => {
     </section>
 
     <section className="list-section" aria-labelledby="list-heading">
-      <div className="section-heading"><h2 id="list-heading">やりたいこと</h2><span>{active.length}件</span></div>
+      <div className="section-heading"><h2 id="list-heading">やりたいこと</h2><span>{wishes.length}件</span></div>
       <form className="quick-add" onSubmit={submitWish}>
         <label className="sr-only" htmlFor="new-wish">やりたいこと</label>
         <input id="new-wish" value={newTitle} onChange={(event) => { setNewTitle(event.target.value); setWishError(""); }} onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} placeholder="やりたいことを入力" aria-describedby={wishError ? "wish-error" : undefined} />
@@ -159,36 +162,36 @@ const App = () => {
       </form>
       {wishError && <p className="field-error" id="wish-error" role="alert">{wishError}</p>}
 
-      {active.length === 0 ? <div className="empty-state"><p>頭に浮かんだことを、ひとつだけ。</p><span>タイトルだけで追加できます</span></div>
-        : <div className="wish-list">{active.map((wish) => editingId === wish.id
-          ? <WishEditor key={wish.id} wish={wish} onSave={(next) => { updateWish(next); setEditingId(null); }} onCancel={() => setEditingId(null)} onComplete={() => completeWish(wish)} onDelete={() => deleteWish(wish)} />
-          : <article className="wish-row" key={wish.id}>
+      {wishes.length === 0 ? <div className="empty-state"><p>頭に浮かんだことを、ひとつだけ。</p><span>タイトルだけで追加できます</span></div>
+        : <div className="wish-list">{wishes.map((wish) => editingId === wish.id
+          ? <WishEditor key={wish.id} wish={wish} onSave={(next) => { updateWish(next); setEditingId(null); }} onCancel={() => setEditingId(null)} onDelete={() => deleteWish(wish)} />
+          : <article className={wish.status === "done" ? "wish-row completed" : "wish-row"} key={wish.id}>
+              <button className="completion-toggle" type="button" onClick={() => toggleWishCompletion(wish)} aria-label={wish.status === "done" ? `「${wish.title}」の達成を取り消す` : `「${wish.title}」を達成にする`} aria-pressed={wish.status === "done"}><span aria-hidden="true">{wish.status === "done" ? "✓" : ""}</span></button>
               <button className="wish-content" type="button" onClick={() => setEditingId(wish.id)}>
                 <strong>{wish.title}</strong>
-                {wish.nextStep
+                {wish.status === "done" ? <small className="done-date">{wish.doneOn?.replaceAll("-", ".")}</small>
+                  : wish.nextStep
                   ? <span className="next-step"><small>次の一歩</small><span>{wish.nextStep}</span></span>
                   : <small className="add-step">＋ 次の一歩を追加</small>}
               </button>
-              <div className="wish-meta"><span>{classifyDueDate(wish.actionDueOn)}</span><button type="button" onClick={() => setEditingId(wish.id)}>編集</button></div>
+              <div className="wish-meta">{wish.status === "active" && <span>{classifyDueDate(wish.actionDueOn)}</span>}<button type="button" onClick={() => setEditingId(wish.id)}>編集</button></div>
             </article>)}</div>}
     </section>
 
-    {done.length > 0 && <details className="done-section"><summary>達成したこと <span>{done.length}件</span></summary>{done.map((wish) => <div className="done-row" key={wish.id}><div><strong>{wish.title}</strong><small>{wish.doneOn?.replaceAll("-", ".")}</small></div><button type="button" onClick={() => restoreWish(wish)}>戻す</button></div>)}</details>}
     <p className="storage-note">入力内容はこのブラウザに保存されます。</p>
   </main>;
 };
 
-const WishEditor = ({ wish, onSave, onCancel, onComplete, onDelete }: { wish: Wish; onSave: (wish: Wish) => void; onCancel: () => void; onComplete: () => void; onDelete: () => void }) => {
+const WishEditor = ({ wish, onSave, onCancel, onDelete }: { wish: Wish; onSave: (wish: Wish) => void; onCancel: () => void; onDelete: () => void }) => {
   const [title, setTitle] = useState(wish.title);
   const [nextStep, setNextStep] = useState(wish.nextStep);
   const initialTimeframe = timeframeFromDueDate(wish.actionDueOn);
   const [timeframe, setTimeframe] = useState<Timeframe>(initialTimeframe);
   return <form className="wish-editor" onSubmit={(event) => { event.preventDefault(); if (title.trim()) onSave({ ...wish, title: title.trim(), nextStep: nextStep.trim(), actionDueOn: timeframe === initialTimeframe ? wish.actionDueOn : dueDateFor(timeframe) }); }}>
     <label htmlFor={`title-${wish.id}`}>やりたいこと</label><input id={`title-${wish.id}`} value={title} onChange={(event) => setTitle(event.target.value)} />
-    <label htmlFor={`step-${wish.id}`}>次の一歩 <span>任意</span></label><input id={`step-${wish.id}`} value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="例：行き方を調べる" />
-    <fieldset><legend>いつ動き出す？</legend><div className="choice-row">{([["month", "今月"], ["year", "今年"], ["undecided", "未定"]] as const).map(([value, label]) => <label key={value} className={timeframe === value ? "selected" : ""}><input type="radio" name={`timeframe-${wish.id}`} checked={timeframe === value} onChange={() => setTimeframe(value)} />{label}</label>)}</div></fieldset>
+    {wish.status === "active" && <><label htmlFor={`step-${wish.id}`}>次の一歩 <span>任意</span></label><input id={`step-${wish.id}`} value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="例：行き方を調べる" />
+      <fieldset><legend>いつ動き出す？</legend><div className="choice-row">{([["month", "今月"], ["year", "今年"], ["undecided", "未定"]] as const).map(([value, label]) => <label key={value} className={timeframe === value ? "selected" : ""}><input type="radio" name={`timeframe-${wish.id}`} checked={timeframe === value} onChange={() => setTimeframe(value)} />{label}</label>)}</div></fieldset></>}
     <div className="form-actions spread"><button className="text-button danger" type="button" onClick={onDelete}>削除</button><div><button className="text-button" type="button" onClick={onCancel}>キャンセル</button><button className="small-primary" type="submit" disabled={!title.trim()}>保存</button></div></div>
-    <button className="complete-button" type="button" onClick={onComplete}>達成にする</button>
   </form>;
 };
 

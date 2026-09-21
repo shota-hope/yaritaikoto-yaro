@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addCalendarYears, classifyDueDate, dueDateFor, parseAge, remainingHealthyDays, remainingHealthyTime, tokyoDate } from "./core";
+import { addCalendarYears, classifyDueDate, dueDateFor, parseAge, remainingHealthyDays, remainingHealthyTime, setWishCompletion, tokyoDate, Wish } from "./core";
 
 describe("parseAge", () => {
   it.each([["0", 0], ["120", 120], [" 42 ", 42]])("accepts %s", (value, expected) => expect(parseAge(value as string)).toBe(expected));
@@ -38,4 +38,30 @@ describe("remainingHealthyDays", () => {
 describe("calendar helpers", () => {
   it("uses the final day of February when adding a year to February 29", () => expect(addCalendarYears("2024-02-29", 1)).toBe("2025-02-28"));
   it("reads the Tokyo year at New Year", () => expect(tokyoDate(new Date("2026-12-31T15:00:00Z"))).toBe("2027-01-01"));
+});
+
+describe("setWishCompletion", () => {
+  const wish: Wish = {
+    id: "wish-1",
+    title: "北海道で流氷を見る",
+    nextStep: "ツアーを調べる",
+    actionDueOn: "2026-12-31",
+    status: "active",
+    doneOn: null,
+    createdAt: "2026-09-20T00:00:00.000Z",
+    updatedAt: "2026-09-20T00:00:00.000Z",
+  };
+
+  it("marks a wish done on the Tokyo date and clears its action timing", () => {
+    expect(setWishCompletion(wish, true, new Date("2026-09-21T15:30:00Z"))).toMatchObject({
+      status: "done",
+      doneOn: "2026-09-22",
+      actionDueOn: null,
+    });
+  });
+
+  it("restores a wish without changing its identity", () => {
+    const completed = setWishCompletion(wish, true, new Date("2026-09-21T03:00:00Z"));
+    expect(setWishCompletion(completed, false)).toMatchObject({ id: "wish-1", status: "active", doneOn: null });
+  });
 });
