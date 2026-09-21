@@ -28,7 +28,9 @@ npm run dev
 
 ## デプロイ
 
-Cloudflare Workers Static Assetsを使い、`workers.dev`へ手動で公開します。
+Cloudflare Workers Static Assetsを使い、`workers.dev`へ公開します。PRではテストと本番ビルドを自動確認し、`main`へのマージ後は検証に成功した内容を既存のWorkerへ自動公開します。必要なSecretsと運用手順は [docs/development.md](docs/development.md#ciと自動デプロイ) を参照してください。
+
+手元から確認・公開する場合は、以下のコマンドを使います。
 
 初回のみ、Cloudflareアカウントへログインします。
 

@@ -67,6 +67,24 @@
 - PR作成後、マージ前に利用者へレビューを依頼し、承認されるまでマージしない。
 - 大きな変更は無理に1つのPRへまとめない。
 
+## CIと自動デプロイ
+
+- `main`向けのPRでは、GitHub Actionsが`npm ci`、`npm test`、`npm run build`を実行する。PRを更新すると古い実行は取り消し、新しいコミットを検証する。
+- `main`へのpushでも同じ検証を行い、成功した最新コミットだけを既存のCloudflare Worker `yaritaikoto-yaro`へ公開する。複数の公開は直列に実行する。
+- PRの検証にはCloudflareの認証情報を渡さない。公開時だけRepository Secretsの`CLOUDFLARE_API_TOKEN`と`CLOUDFLARE_ACCOUNT_ID`を使用する。
+- `CLOUDFLARE_API_TOKEN`には、対象アカウントへWorkersを公開できる最小限の権限を設定する。値をリポジトリやログへ記載しない。
+- GitHubのActions画面で検証・公開結果を確認する。失敗した場合は原因を修正してPRを更新し、`main`の失敗は修正PRをマージして再実行する。
+- PRのマージ承認には、その変更が検証成功後に自動公開されることへの承認も含む。自動公開を止める必要がある場合は、マージ前にこのworkflowを変更する。
+
+初回設定では、GitHubリポジトリのSettings > Secrets and variables > Actionsに次のRepository Secretsを登録する。
+
+| Secret | 設定する値 |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | 対象アカウントに限定したWorkers公開用APIトークン |
+| `CLOUDFLARE_ACCOUNT_ID` | 既存Workerが所属するCloudflareアカウントID |
+
+Secretsが未設定または無効な場合、検証までは成功しても公開は失敗する。実際の公開URLはActionsの実行結果またはCloudflare Dashboardで確認する。
+
 ## 完了の目安
 
 - Issueの目的を満たしている。
