@@ -52,7 +52,7 @@ button:disabled { cursor: default; opacity: .38; }
 .wish-list { margin-top: 20px; border-top: 1px solid #aaa; }
 .wish-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 17px 0; border-bottom: 1px solid #d8d8d8; }
 .completion-toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; }
-.completion-toggle span { display: grid; place-items: center; width: 36px; height: 36px; border: 1.5px solid #777; border-radius: 50%; color: #fff; font-size: 1.35rem; font-weight: 700; line-height: 1; }
+.completion-toggle span { display: grid; place-items: center; width: 24px; height: 24px; border: 1.5px solid #777; border-radius: 50%; color: #fff; font-size: .95rem; font-weight: 700; line-height: 1; }
 .completion-toggle[aria-pressed="true"] span { border-color: #171717; background: #171717; }
 .wish-content { display: grid; gap: 8px; min-width: 0; padding: 0; border: 0; background: transparent; color: #171717; text-align: left; }
 .wish-content strong { overflow-wrap: anywhere; font-size: 1rem; line-height: 1.55; }
