@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AppData, Profile, Timeframe, Wish, classifyDueDate, dueDateFor, parseAge, remainingHealthyTime, setWishCompletion, timeframeFromDueDate, tokyoDate } from "./core";
+import { AppData, Profile, Timeframe, Wish, advanceWishStep, classifyDueDate, dueDateFor, parseAge, remainingHealthyTime, setWishCompletion, timeframeFromDueDate, tokyoDate } from "./core";
 
 const STORAGE_KEY = "yaritaikoto-yaro:v1";
 
@@ -31,6 +31,7 @@ const App = () => {
   const [newTitle, setNewTitle] = useState("");
   const [wishError, setWishError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [completingStepId, setCompletingStepId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [today, setToday] = useState(() => tokyoDate());
   const ageInput = useRef<HTMLInputElement>(null);
@@ -119,12 +120,14 @@ const App = () => {
     const completed = wish.status !== "done";
     updateWish(setWishCompletion(wish, completed));
     setEditingId(null);
+    setCompletingStepId(null);
     setNotice(completed ? "達成しました。おめでとう。" : "達成を取り消しました");
   };
   const deleteWish = (wish: Wish) => {
     if (!window.confirm(`「${wish.title}」を削除しますか？`)) return;
     setData((current) => current ? { ...current, wishes: current.wishes.filter((item) => item.id !== wish.id) } : current);
     setEditingId(null);
+    setCompletingStepId(null);
   };
 
   return <main className="app-shell">
@@ -163,23 +166,45 @@ const App = () => {
       {wishError && <p className="field-error" id="wish-error" role="alert">{wishError}</p>}
 
       {wishes.length === 0 ? <div className="empty-state"><p>頭に浮かんだことを、ひとつだけ。</p><span>タイトルだけで追加できます</span></div>
-        : <div className="wish-list">{wishes.map((wish) => editingId === wish.id
+        : <div className="wish-list">{wishes.map((wish) => completingStepId === wish.id
+          ? <NextStepEditor key={wish.id} wish={wish} onSave={(nextStep) => {
+              updateWish(advanceWishStep(wish, nextStep));
+              setCompletingStepId(null);
+              setNotice("次の一歩を更新しました");
+            }} onCancel={() => setCompletingStepId(null)} />
+          : editingId === wish.id
           ? <WishEditor key={wish.id} wish={wish} onSave={(next) => { updateWish(next); setEditingId(null); }} onCancel={() => setEditingId(null)} onDelete={() => deleteWish(wish)} />
-          : <article className={wish.status === "done" ? "wish-row completed" : "wish-row"} key={wish.id}>
-              <button className="completion-toggle" type="button" onClick={() => toggleWishCompletion(wish)} aria-label={wish.status === "done" ? `「${wish.title}」の達成を取り消す` : `「${wish.title}」を達成にする`} aria-pressed={wish.status === "done"}><span aria-hidden="true">{wish.status === "done" ? "✓" : ""}</span></button>
-              <button className="wish-content" type="button" onClick={() => setEditingId(wish.id)}>
-                <strong>{wish.title}</strong>
-                {wish.status === "done" ? <small className="done-date">{wish.doneOn?.replaceAll("-", ".")}</small>
-                  : wish.nextStep
-                  ? <span className="next-step"><small>次の一歩</small><span>{wish.nextStep}</span></span>
-                  : <small className="add-step">＋ 次の一歩を追加</small>}
-              </button>
-              <div className="wish-meta">{wish.status === "active" && <span>{classifyDueDate(wish.actionDueOn)}</span>}<button type="button" onClick={() => setEditingId(wish.id)}>編集</button></div>
+          : <article className={wish.status === "done" ? "wish-card completed" : "wish-card"} key={wish.id}>
+              <div className="wish-card-header">
+                <button className="completion-toggle" type="button" onClick={() => toggleWishCompletion(wish)} aria-label={wish.status === "done" ? `「${wish.title}」の達成を取り消す` : `「${wish.title}」を達成にする`} aria-pressed={wish.status === "done"}><span aria-hidden="true">{wish.status === "done" ? "✓" : ""}</span></button>
+                <strong className="wish-title">{wish.title}</strong>
+                <div className="wish-meta">
+                  {wish.status === "active" ? <span>{classifyDueDate(wish.actionDueOn)}</span> : <span>{wish.doneOn?.replaceAll("-", ".")}</span>}
+                  <button type="button" onClick={() => { setCompletingStepId(null); setEditingId(wish.id); }} aria-label={`「${wish.title}」を編集`}>•••</button>
+                </div>
+              </div>
+              {wish.status === "active" && (wish.nextStep
+                ? <div className="next-step-panel">
+                    <span className="next-step-copy"><small>次の一歩</small><span>{wish.nextStep}</span></span>
+                    <button className="complete-step-button" type="button" onClick={() => { setEditingId(null); setCompletingStepId(wish.id); }} aria-label={`次の一歩「${wish.nextStep}」を完了`}>完了</button>
+                  </div>
+                : <button className="add-step" type="button" onClick={() => { setCompletingStepId(null); setEditingId(wish.id); }}>＋ 次の一歩を追加</button>)}
             </article>)}</div>}
     </section>
 
     <p className="storage-note">入力内容はこのブラウザに保存されます。</p>
   </main>;
+};
+
+const NextStepEditor = ({ wish, onSave, onCancel }: { wish: Wish; onSave: (nextStep: string) => void; onCancel: () => void }) => {
+  const [nextStep, setNextStep] = useState("");
+  return <form className="step-editor" onSubmit={(event) => { event.preventDefault(); if (nextStep.trim()) onSave(nextStep); }}>
+    <strong className="step-editor-title">{wish.title}</strong>
+    <p className="completed-step"><span aria-hidden="true">✓</span><span>「{wish.nextStep}」を完了</span></p>
+    <label htmlFor={`new-step-${wish.id}`}>新しい次の一歩</label>
+    <input id={`new-step-${wish.id}`} autoFocus value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="例：候補日を決める" />
+    <div className="form-actions"><button className="text-button" type="button" onClick={onCancel}>キャンセル</button><button className="small-primary" type="submit" disabled={!nextStep.trim()}>更新</button></div>
+  </form>;
 };
 
 const WishEditor = ({ wish, onSave, onCancel, onDelete }: { wish: Wish; onSave: (wish: Wish) => void; onCancel: () => void; onDelete: () => void }) => {

@@ -100,3 +100,11 @@ export const setWishCompletion = (wish: Wish, completed: boolean, date = new Dat
   doneOn: completed ? tokyoDate(date) : null,
   actionDueOn: completed ? null : wish.actionDueOn,
 });
+
+export const advanceWishStep = (wish: Wish, nextStep: string): Wish => ({
+  ...wish,
+  nextStep: nextStep.trim(),
+  actionDueOn: null,
+  status: "active",
+  doneOn: null,
+});
