@@ -1,11 +1,9 @@
-export type Timeframe = "month" | "year" | "undecided";
 export type WishStatus = "active" | "done";
 
 export type Wish = {
   id: string;
   title: string;
   nextStep: string;
-  actionDueOn: string | null;
   status: WishStatus;
   doneOn: string | null;
   createdAt: string;
@@ -28,6 +26,26 @@ const dateParts = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
+
+export const normalizeAppData = (value: unknown): AppData | null => {
+  if (!isRecord(value) || value.version !== 1 || !isRecord(value.profile) || !Array.isArray(value.wishes)) return null;
+  const { age, savedAt } = value.profile;
+  if (typeof age !== "number" || typeof savedAt !== "string") return null;
+
+  const wishes: Wish[] = [];
+  for (const item of value.wishes) {
+    if (!isRecord(item)) return null;
+    const { id, title, nextStep, status, doneOn, createdAt, updatedAt } = item;
+    if (typeof id !== "string" || typeof title !== "string" || typeof nextStep !== "string"
+      || (status !== "active" && status !== "done") || (doneOn !== null && typeof doneOn !== "string")
+      || typeof createdAt !== "string" || typeof updatedAt !== "string") return null;
+    wishes.push({ id, title, nextStep, status, doneOn, createdAt, updatedAt });
+  }
+
+  return { version: 1, profile: { age, savedAt }, wishes };
+};
+
 export const parseAge = (value: string) => {
   if (!/^\d+$/.test(value.trim())) return null;
   const age = Number(value);
@@ -37,30 +55,6 @@ export const parseAge = (value: string) => {
 export const tokyoDate = (date = new Date()) => {
   const parts = Object.fromEntries(dateParts.formatToParts(date).map((part) => [part.type, part.value]));
   return `${parts.year}-${parts.month}-${parts.day}`;
-};
-
-export const dueDateFor = (timeframe: Timeframe, date = new Date()): string | null => {
-  if (timeframe === "undecided") return null;
-  const [year, month] = tokyoDate(date).split("-").map(Number);
-  if (timeframe === "year") return `${year}-12-31`;
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-};
-
-export const classifyDueDate = (dueOn: string | null, date = new Date()) => {
-  if (!dueOn) return "未定";
-  const today = tokyoDate(date);
-  if (dueOn < today) return "予定を見直す";
-  if (dueOn.slice(0, 7) === today.slice(0, 7)) return "今月";
-  if (dueOn.slice(0, 4) === today.slice(0, 4)) return "今年";
-  return "未定";
-};
-
-export const timeframeFromDueDate = (dueOn: string | null, date = new Date()): Timeframe => {
-  const label = classifyDueDate(dueOn, date);
-  if (label === "今月") return "month";
-  if (label === "今年") return "year";
-  return "undecided";
 };
 
 const dateToDayNumber = (date: string) => {
@@ -98,13 +92,11 @@ export const setWishCompletion = (wish: Wish, completed: boolean, date = new Dat
   ...wish,
   status: completed ? "done" : "active",
   doneOn: completed ? tokyoDate(date) : null,
-  actionDueOn: completed ? null : wish.actionDueOn,
 });
 
 export const advanceWishStep = (wish: Wish, nextStep: string): Wish => ({
   ...wish,
   nextStep: nextStep.trim(),
-  actionDueOn: null,
   status: "active",
   doneOn: null,
 });

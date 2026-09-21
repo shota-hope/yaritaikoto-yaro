@@ -1,21 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { addCalendarYears, advanceWishStep, classifyDueDate, dueDateFor, parseAge, remainingHealthyDays, remainingHealthyTime, setWishCompletion, tokyoDate, Wish } from "./core";
+import { addCalendarYears, advanceWishStep, normalizeAppData, parseAge, remainingHealthyDays, remainingHealthyTime, setWishCompletion, tokyoDate, Wish } from "./core";
 
 describe("parseAge", () => {
   it.each([["0", 0], ["120", 120], [" 42 ", 42]])("accepts %s", (value, expected) => expect(parseAge(value as string)).toBe(expected));
   it.each(["", " ", "1.5", "-1", "121", "年齢"])("rejects %s", (value) => expect(parseAge(value)).toBeNull());
 });
 
-describe("dueDateFor", () => {
-  it("handles a leap-year February in Tokyo", () => expect(dueDateFor("month", new Date("2024-02-15T03:00:00Z"))).toBe("2024-02-29"));
-  it("stores the final day of the year", () => expect(dueDateFor("year", new Date("2026-09-20T03:00:00Z"))).toBe("2026-12-31"));
-});
+describe("normalizeAppData", () => {
+  it("keeps existing wishes while removing the retired action timing field", () => {
+    const normalized = normalizeAppData({
+      version: 1,
+      profile: { age: 34, savedAt: "2026-09-20T00:00:00.000Z" },
+      wishes: [{
+        id: "wish-1",
+        title: "北海道で流氷を見る",
+        nextStep: "ツアーを調べる",
+        actionDueOn: "2026-12-31",
+        status: "active",
+        doneOn: null,
+        createdAt: "2026-09-20T00:00:00.000Z",
+        updatedAt: "2026-09-20T00:00:00.000Z",
+      }],
+    });
 
-describe("classifyDueDate", () => {
-  const now = new Date("2026-09-20T03:00:00Z");
-  it("does not call today overdue", () => expect(classifyDueDate("2026-09-20", now)).toBe("今月"));
-  it("groups a past date gently", () => expect(classifyDueDate("2026-09-19", now)).toBe("予定を見直す"));
-  it("prefers this month over this year", () => expect(classifyDueDate("2026-09-30", now)).toBe("今月"));
+    expect(normalized?.wishes[0]).toEqual({
+      id: "wish-1",
+      title: "北海道で流氷を見る",
+      nextStep: "ツアーを調べる",
+      status: "active",
+      doneOn: null,
+      createdAt: "2026-09-20T00:00:00.000Z",
+      updatedAt: "2026-09-20T00:00:00.000Z",
+    });
+  });
 });
 
 describe("remainingHealthyDays", () => {
@@ -45,18 +62,16 @@ describe("setWishCompletion", () => {
     id: "wish-1",
     title: "北海道で流氷を見る",
     nextStep: "ツアーを調べる",
-    actionDueOn: "2026-12-31",
     status: "active",
     doneOn: null,
     createdAt: "2026-09-20T00:00:00.000Z",
     updatedAt: "2026-09-20T00:00:00.000Z",
   };
 
-  it("marks a wish done on the Tokyo date and clears its action timing", () => {
+  it("marks a wish done on the Tokyo date", () => {
     expect(setWishCompletion(wish, true, new Date("2026-09-21T15:30:00Z"))).toMatchObject({
       status: "done",
       doneOn: "2026-09-22",
-      actionDueOn: null,
     });
   });
 
@@ -71,19 +86,17 @@ describe("advanceWishStep", () => {
     id: "wish-1",
     title: "北海道で流氷を見る",
     nextStep: "ツアーを調べる",
-    actionDueOn: "2026-12-31",
     status: "active",
     doneOn: null,
     createdAt: "2026-09-20T00:00:00.000Z",
     updatedAt: "2026-09-20T00:00:00.000Z",
   };
 
-  it("replaces the completed step and resets its timing", () => {
+  it("replaces the completed step", () => {
     expect(advanceWishStep(wish, "  候補日を決める  ")).toMatchObject({
       id: "wish-1",
       title: "北海道で流氷を見る",
       nextStep: "候補日を決める",
-      actionDueOn: null,
       status: "active",
       doneOn: null,
     });
@@ -91,6 +104,6 @@ describe("advanceWishStep", () => {
 
   it("does not mutate the current step", () => {
     advanceWishStep(wish, "候補日を決める");
-    expect(wish).toMatchObject({ nextStep: "ツアーを調べる", actionDueOn: "2026-12-31" });
+    expect(wish).toMatchObject({ nextStep: "ツアーを調べる" });
   });
 });

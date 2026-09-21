@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AppData, Profile, Timeframe, Wish, advanceWishStep, classifyDueDate, dueDateFor, parseAge, remainingHealthyTime, setWishCompletion, timeframeFromDueDate, tokyoDate } from "./core";
+import { AppData, Profile, Wish, advanceWishStep, normalizeAppData, parseAge, remainingHealthyTime, setWishCompletion, tokyoDate } from "./core";
 
 const STORAGE_KEY = "yaritaikoto-yaro:v1";
 
@@ -13,14 +13,13 @@ const loadData = (): AppData | null => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as AppData;
-    return parsed?.version === 1 && parsed.profile && Array.isArray(parsed.wishes) ? parsed : null;
+    return normalizeAppData(JSON.parse(raw));
   } catch { return null; }
 };
 
 const makeWish = (title: string, nextStep = ""): Wish => {
   const now = new Date().toISOString();
-  return { id: crypto.randomUUID(), title: title.trim(), nextStep: nextStep.trim(), actionDueOn: null, status: "active", doneOn: null, createdAt: now, updatedAt: now };
+  return { id: crypto.randomUUID(), title: title.trim(), nextStep: nextStep.trim(), status: "active", doneOn: null, createdAt: now, updatedAt: now };
 };
 
 const App = () => {
@@ -179,7 +178,7 @@ const App = () => {
                 <button className="completion-toggle" type="button" onClick={() => toggleWishCompletion(wish)} aria-label={wish.status === "done" ? `「${wish.title}」の達成を取り消す` : `「${wish.title}」を達成にする`} aria-pressed={wish.status === "done"}><span aria-hidden="true">{wish.status === "done" ? "✓" : ""}</span></button>
                 <strong className="wish-title">{wish.title}</strong>
                 <div className="wish-meta">
-                  {wish.status === "active" ? <span>{classifyDueDate(wish.actionDueOn)}</span> : <span>{wish.doneOn?.replaceAll("-", ".")}</span>}
+                  {wish.status === "done" && <span>{wish.doneOn?.replaceAll("-", ".")}</span>}
                   <button type="button" onClick={() => { setCompletingStepId(null); setEditingId(wish.id); }} aria-label={`「${wish.title}」を編集`}>•••</button>
                 </div>
               </div>
@@ -210,12 +209,9 @@ const NextStepEditor = ({ wish, onSave, onCancel }: { wish: Wish; onSave: (nextS
 const WishEditor = ({ wish, onSave, onCancel, onDelete }: { wish: Wish; onSave: (wish: Wish) => void; onCancel: () => void; onDelete: () => void }) => {
   const [title, setTitle] = useState(wish.title);
   const [nextStep, setNextStep] = useState(wish.nextStep);
-  const initialTimeframe = timeframeFromDueDate(wish.actionDueOn);
-  const [timeframe, setTimeframe] = useState<Timeframe>(initialTimeframe);
-  return <form className="wish-editor" onSubmit={(event) => { event.preventDefault(); if (title.trim()) onSave({ ...wish, title: title.trim(), nextStep: nextStep.trim(), actionDueOn: timeframe === initialTimeframe ? wish.actionDueOn : dueDateFor(timeframe) }); }}>
+  return <form className="wish-editor" onSubmit={(event) => { event.preventDefault(); if (title.trim()) onSave({ ...wish, title: title.trim(), nextStep: nextStep.trim() }); }}>
     <label htmlFor={`title-${wish.id}`}>やりたいこと</label><input id={`title-${wish.id}`} value={title} onChange={(event) => setTitle(event.target.value)} />
-    {wish.status === "active" && <><label htmlFor={`step-${wish.id}`}>次の一歩 <span>任意</span></label><input id={`step-${wish.id}`} value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="例：行き方を調べる" />
-      <fieldset><legend>いつ動き出す？</legend><div className="choice-row">{([["month", "今月"], ["year", "今年"], ["undecided", "未定"]] as const).map(([value, label]) => <label key={value} className={timeframe === value ? "selected" : ""}><input type="radio" name={`timeframe-${wish.id}`} checked={timeframe === value} onChange={() => setTimeframe(value)} />{label}</label>)}</div></fieldset></>}
+    {wish.status === "active" && <><label htmlFor={`step-${wish.id}`}>次の一歩 <span>任意</span></label><input id={`step-${wish.id}`} value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="例：行き方を調べる" /></>}
     <div className="form-actions spread"><button className="text-button danger" type="button" onClick={onDelete}>削除</button><div><button className="text-button" type="button" onClick={onCancel}>キャンセル</button><button className="small-primary" type="submit" disabled={!title.trim()}>保存</button></div></div>
   </form>;
 };

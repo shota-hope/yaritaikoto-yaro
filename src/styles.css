@@ -80,12 +80,6 @@ button:disabled { cursor: default; opacity: .38; }
 .step-editor label { margin: 2px 0 -7px; font-size: .78rem; font-weight: 700; }
 .step-editor > input { width: 100%; min-height: 50px; padding: 0 12px; border: 1px solid #b8b8b3; border-radius: 9px; outline: 0; background: #fff; color: #171717; }
 .step-editor > input:focus { border: 2px solid #111; }
-fieldset { padding: 0; margin: 18px 0 0; border: 0; }
-legend { margin-bottom: 9px; font-size: .82rem; font-weight: 700; }
-.choice-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-.choice-row label { display: grid; place-items: center; min-height: 44px; margin: 0; border: 1px solid #aaa; border-radius: 9px; color: #555; font-size: .85rem; }
-.choice-row label.selected { border: 2px solid #111; color: #111; font-weight: 700; }
-.choice-row input { position: absolute; opacity: 0; pointer-events: none; }
 .form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 15px; }
 .form-actions.spread { justify-content: space-between; }
 .form-actions.spread > div { display: flex; gap: 4px; }
