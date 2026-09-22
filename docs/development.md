@@ -62,12 +62,12 @@
 
 ## CIと自動デプロイ
 
-- `main`向けのPRでは、GitHub Actionsが`npm ci`、`npm test`、`npm run build`を実行する。PRを更新すると古い実行は取り消し、新しいコミットを検証する。
+- `main`向けのPRでは、GitHub Actionsが`npm ci --ignore-scripts`、`npm audit --audit-level=high`、`npm audit signatures`、`npm test`、`npm run build`を実行する。PRを更新すると古い実行は取り消し、新しいコミットを検証する。依存パッケージのインストール時スクリプトは実行しない。
 - `main`へのpushでも同じ検証を行い、成功した最新コミットだけを既存のCloudflare Worker `yaritaikoto-yaro`へ公開する。複数の公開は直列に実行する。
 - PRの検証にはCloudflareの認証情報を渡さない。公開時だけ`production` Environment Secretsの`CLOUDFLARE_API_TOKEN`と`CLOUDFLARE_ACCOUNT_ID`を使用する。
 - `CLOUDFLARE_API_TOKEN`には、対象アカウントへWorkersを公開できる最小限の権限を設定する。値をリポジトリやログへ記載しない。
 - `production` Environmentは`main`だけに限定し、`main`はPRと`verify`の成功を必須にする。force pushとブランチ削除は許可しない。
-- workflowで利用するGitHub Actionsは、確認済みの完全なコミットSHAへ固定する。更新時は公式リポジトリのタグが指すコミットを確認する。
+- workflowで利用するGitHub Actionsは、確認済みの完全なコミットSHAへ固定する。リポジトリ設定でも完全SHA固定を必須にし、許可するActionを`actions/checkout`と`actions/setup-node`に限定する。更新時は公式リポジトリのタグが指すコミットを確認する。
 - GitHubのActions画面で検証・公開結果を確認する。失敗した場合は原因を修正してPRを更新し、`main`の失敗は修正PRをマージして再実行する。
 - PRのマージ承認には、その変更が検証成功後に自動公開されることへの承認も含む。自動公開を止める必要がある場合は、マージ前にこのworkflowを変更する。
 
@@ -85,7 +85,7 @@ Secretsが未設定または無効な場合、検証までは成功しても公�
 - DependabotはnpmとGitHub Actionsの更新を毎週確認する。通常のバージョン更新は、公開から7日以上経過したものだけを対象にする。リポジトリ設定ではDependabot alertsとsecurity updatesを有効にし、既知の脆弱性に対するセキュリティ更新には、この待機期間を適用しない。
 - npmの直接依存は`package.json`のバージョン範囲と`package-lock.json`で管理する。更新PRでは両方の差分を確認し、意図しない依存やインストールスクリプトの追加がないか確認する。
 - 更新PRは自動マージしない。リリースノート、破壊的変更、公開元を確認し、GitHub Actionsの場合は完全なコミットSHAが公式リポジトリのリリースを指していることを確認する。
-- `npm audit`で既知の脆弱性を確認し、CIの`npm ci`、`npm test`、`npm run build`がすべて成功してから取り込む。
+- `npm audit`で既知の脆弱性を確認し、CIの監査・テスト・ビルドがすべて成功してから取り込む。CIの脆弱性監査はhigh以上を失敗とし、moderate以下もレビュー時に確認する。
 - DependabotのPRにも通常のレビュー手順とブランチ保護を適用する。PRの検証には公開用Secretsを渡さず、マージ後の`main`だけを公開対象にする。
 
 ## 完了の目安
