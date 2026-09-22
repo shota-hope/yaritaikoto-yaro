@@ -131,26 +131,28 @@ const App = () => {
 
   return <main className="app-shell">
     <header className="hero">
-      <p className="wordmark">やりたいことやろう</p>
-      <h1>残りの時間を意識して、<br />やりたいことを一つずつ。</h1>
+      <h1 className="wordmark">やりたいことやろう</h1>
     </header>
 
     {notice && <button className="notice" type="button" onClick={() => setNotice("")}>{notice}<span aria-hidden="true">×</span></button>}
 
     <section className="time-section" aria-labelledby="time-heading">
-      <div className="age-field">
-        <label htmlFor="age">今の年齢</label>
-        <div className={ageError ? "age-input invalid" : "age-input"}>
-          <input ref={ageInput} id="age" name="age" type="number" inputMode="numeric" min="0" max="120" value={age} onChange={(event) => { setAge(event.target.value); setAgeError(""); }} onBlur={saveAge} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} aria-describedby={ageError ? "age-error" : undefined} aria-invalid={Boolean(ageError)} />
-          <span>歳</span>
+      <p className="time-heading" id="time-heading">時間を考える目安</p>
+      <div className="time-main">
+        <div className="remaining-time">
+          <p className="section-label">健康寿命の目安まで</p>
+          {!remaining ? <p className="time-prompt">年齢を入力してください</p>
+            : remaining.totalDays > 0 ? <p className="time-number"><span>約</span><strong>{remaining.years}</strong><span>年</span><strong>{remaining.days}</strong><span>日</span></p>
+            : <p className="time-prompt">これから、何をしたい？</p>}
         </div>
-        {ageError && <p className="field-error" id="age-error" role="alert">{ageError}</p>}
-      </div>
-      <div className="remaining-time">
-        <p className="section-label" id="time-heading">健康寿命の目安まで</p>
-        {!remaining ? <p className="time-prompt">年齢を入力してください</p>
-          : remaining.totalDays > 0 ? <p className="time-number"><span>約</span><strong>{remaining.years}</strong><span>年</span><strong>{remaining.days}</strong><span>日</span></p>
-          : <p className="time-prompt">これから、何をしたい？</p>}
+        <div className="age-field">
+          <div className={ageError ? "age-input invalid" : "age-input"}>
+            <label htmlFor="age">年齢</label>
+            <input ref={ageInput} id="age" name="age" type="number" inputMode="numeric" min="0" max="120" value={age} onChange={(event) => { setAge(event.target.value); setAgeError(""); }} onBlur={saveAge} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} aria-describedby={ageError ? "age-error" : undefined} aria-invalid={Boolean(ageError)} />
+            <span className="age-unit">歳</span>
+          </div>
+          {ageError && <p className="field-error" id="age-error" role="alert">{ageError}</p>}
+        </div>
       </div>
       <p className="caution">2022年の健康寿命（男性72.57年、女性75.45年）の中間値74.01年を目安にしています。個人の寿命や健康状態を予測するものではありません。<a href="https://www.mhlw.go.jp/content/10904750/001363070.pdf" target="_blank" rel="noreferrer">厚生労働省の資料</a></p>
     </section>
@@ -176,9 +178,8 @@ const App = () => {
           : <article className={wish.status === "done" ? "wish-card completed" : "wish-card"} key={wish.id}>
               <div className="wish-card-header">
                 <button className="completion-toggle" type="button" onClick={() => toggleWishCompletion(wish)} aria-label={wish.status === "done" ? `「${wish.title}」の達成を取り消す` : `「${wish.title}」を達成にする`} aria-pressed={wish.status === "done"}><span aria-hidden="true">{wish.status === "done" ? "✓" : ""}</span></button>
-                <strong className="wish-title">{wish.title}</strong>
+                <div className="wish-copy"><strong className="wish-title">{wish.title}</strong>{wish.status === "done" && <span className="done-date">達成 {wish.doneOn?.replaceAll("-", ".")}</span>}</div>
                 <div className="wish-meta">
-                  {wish.status === "done" && <span>{wish.doneOn?.replaceAll("-", ".")}</span>}
                   <button type="button" onClick={() => { setCompletingStepId(null); setEditingId(wish.id); }} aria-label={`「${wish.title}」を編集`}>•••</button>
                 </div>
               </div>
