@@ -137,10 +137,9 @@ const App = () => {
     {notice && <button className="notice" type="button" onClick={() => setNotice("")}>{notice}<span aria-hidden="true">×</span></button>}
 
     <section className="time-section" aria-labelledby="time-heading">
-      <p className="time-heading" id="time-heading">時間を考える目安</p>
       <div className="time-main">
         <div className="remaining-time">
-          <p className="section-label">健康寿命の目安まで</p>
+          <p className="section-label" id="time-heading">健康寿命の目安まで</p>
           {!remaining ? <p className="time-prompt">年齢を入力してください</p>
             : remaining.totalDays > 0 ? <p className="time-number"><span>約</span><strong>{remaining.years}</strong><span>年</span><strong>{remaining.days}</strong><span>日</span></p>
             : <p className="time-prompt">これから、何をしたい？</p>}
